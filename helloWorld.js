@@ -1,34 +1,4 @@
 const {Color, Vector3} = THREE
-
-function queryGPT(prompt) {
-    return new Promise((resolve, reject) => {
-      var xhr = new XMLHttpRequest();
-  
-      xhr.onreadystatechange = function() {
-        if (xhr.readyState === XMLHttpRequest.DONE) {
-          if (xhr.status === 200) {
-            var response = JSON.parse(xhr.responseText);
-            console.log(response.choices[0].text);
-            resolve(response.choices[0].text);
-          } else {
-            console.error('Error:', xhr.status, xhr.responseText);
-            reject('Error: ' + xhr.status);
-          }
-        }
-      }
-    
-      xhr.open("POST", "https://api.openai.com/v1/engines/davinci/completions", true);
-      xhr.setRequestHeader("Content-Type", "application/json");
-      xhr.setRequestHeader("Authorization", "Bearer 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"); // Replace with your actual API key
-    
-      var data = JSON.stringify({
-        prompt: prompt,
-        max_tokens: 50
-      });
-    
-      xhr.send(data);
-    });
-  }
   
 class SampleElement extends CapElement {
   schema = {}
@@ -45,19 +15,40 @@ class SampleElement extends CapElement {
 
   remove = () => {}
 
+  async queryChatGPT(prompt) {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer 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`, // Replace with your actual API key
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "system", content: "You are a helpful assistant." },
+                   { role: "user", content: prompt }]
+      }),
+    });
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+
   async showText() {
     const entity = document.createElement('a-entity')
-    const gptext = await queryGPT("Hello World!")
+    const gptext = await queryChatGPT("Hello World!")
     entity.object3D.position.set(0, 1.3, 0)
   
     const itemIday = document.createElement('a-entity')
     itemIday.setAttribute('troika-text', {
-      color: '#fff',
-      align: 'left',
-      fontSize: 0.2,
-      value: gptext,
-      fillOpacity: '1'
-    })
+        color: '#f0f',
+        align: 'left',
+        fontSize: 0.2,
+        maxWidth: 2, // Set the maximum width of the text box (in meters)
+        wrapCount: 30, // Adjust this value as needed for the desired wrapping
+        value: gptext,
+        fillOpacity: '1'
+      })
+      
     itemIday.object3D.position.set(0, 0.2, 0)
     entity.appendChild(itemIday)
     this.el.appendChild(entity)
